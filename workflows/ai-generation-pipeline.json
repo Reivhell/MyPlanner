@@ -1,0 +1,180 @@
+{
+  "name": "AI Generation Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-pipeline",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const { projectId, stages } = items[0].json;\nreturn [{ json: { projectId, stages, currentStageIndex: 0 } }];"
+      },
+      "id": "init",
+      "name": "Initialize Pipeline",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const { projectId, stages, currentStageIndex } = items[0].json;\nif (currentStageIndex >= stages.length) {\n  return [{ json: { projectId, completed: true } }];\n}\nconst stage = stages[currentStageIndex];\nreturn [{ json: { projectId, stage, currentStageIndex, stages } }];"
+      },
+      "id": "nextStage",
+      "name": "Next Stage",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.projectId }}/generate",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{ JSON.stringify({ stage: $json.stage }) }}"
+      },
+      "id": "generate",
+      "name": "Generate Stage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [850, 300],
+      "credentials": {
+        "httpBasicAuth": "backend-api"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const { projectId, stage, currentStageIndex, stages } = items[0].json;\nreturn [{ json: { projectId, stage, currentStageIndex: currentStageIndex + 1, stages } }];"
+      },
+      "id": "increment",
+      "name": "Increment Stage",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.completed === true }}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "checkDone",
+      "name": "Check Done",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { success: true, message: 'Pipeline completed' } }];"
+      },
+      "id": "done",
+      "name": "Done",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { success: false, message: 'Pipeline failed' } }];"
+      },
+      "id": "error",
+      "name": "Error",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initialize Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Next Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next Stage": {
+      "main": [
+        [
+          {
+            "node": "Generate Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Stage": {
+      "main": [
+        [
+          {
+            "node": "Increment Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Stage": {
+      "main": [
+        [
+          {
+            "node": "Check Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Done": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Next Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}

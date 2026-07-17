@@ -1,0 +1,59 @@
+{
+  "name": "AI Product Planning OS — Full Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "planner-pipeline",
+        "responseMode": "onReceived"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": { "assignments": { "assignments": [] } },
+      "name": "Set Project Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.OMNIROUTE_URL }}/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.OMNIROUTE_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}"
+      },
+      "name": "Call OmniRoute",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.BACKEND_URL }}/api/projects/{{ $json.projectId }}/generations/{{ $json.runId }}/callback",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}"
+      },
+      "name": "Report Back to Hono API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Set Project Context", "type": "main", "index": 0 }]] },
+    "Set Project Context": { "main": [[{ "node": "Call OmniRoute", "type": "main", "index": 0 }]] },
+    "Call OmniRoute": { "main": [[{ "node": "Report Back to Hono API", "type": "main", "index": 0 }]] }
+  }
+}

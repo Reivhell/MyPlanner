@@ -1,0 +1,71 @@
+{
+  "name": "Interview Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "interview-generator",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const { projectId } = items[0].json;\nreturn [{ json: { projectId } }];"
+      },
+      "id": "prepare",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.projectId }}/generate",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{ JSON.stringify({ stage: 'interview' }) }}"
+      },
+      "id": "generate",
+      "name": "Generate Interview",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "credentials": {
+        "httpBasicAuth": "backend-api"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "Generate Interview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}

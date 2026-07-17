@@ -1,0 +1,30 @@
+#Dev
+.claude
+docs/
+.superpowers
+
+# Dependencies
+**/node_modules/
+
+# Build output
+dist/
+build/
+.svelte-kit/
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
